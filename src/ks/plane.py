@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ks.convert import html_to_md
+from ks.convert import html_to_md, md_to_html
 from ks.http import Http, PlaneError
 from ks.refs import parse_ref
 
@@ -31,6 +31,30 @@ class Issue:
     parent_ref: str | None
     created_at: str
     updated_at: str
+
+
+FORBIDDEN_STATES = ("done", "cancelled")
+
+
+class Refused(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class Comment:
+    id: str
+    actor: str
+    created_at: str
+    text_md: str
+
+
+def decision(comments: list[Comment]) -> tuple[str, str] | None:
+    for c in reversed(comments):
+        first = c.text_md.split("\n", 1)[0]
+        for word in ("chosen", "rejected"):
+            if first.lower().startswith(f"{word}:"):
+                return word, first[len(word) + 1:].strip()
+    return None
 
 
 def _paged(http: Http, path: str) -> list[dict]:
@@ -82,11 +106,14 @@ class Plane:
     def labels(self, project: Project) -> list[Named]:
         return self._named(self._labels, project, "labels")
 
-    def _get(self, path: str) -> dict:
-        status, data = self.http.request("GET", path)
+    def _send(self, method: str, path: str, body: dict | None = None) -> dict:
+        status, data = self.http.request(method, path, body)
         if status >= 400:
             raise PlaneError(status, path, str(data))
         return data
+
+    def _get(self, path: str) -> dict:
+        return self._send("GET", path)
 
     def get_issue(self, ref: str) -> Issue:
         ident, n = parse_ref(ref)
@@ -131,3 +158,99 @@ class Plane:
         except PlaneError:
             return None
         return f"{project.identifier}-{parent['sequence_id']}"
+
+    @staticmethod
+    def _resolve(items: list[Named], name: str, kind: str) -> str:
+        for item in items:
+            if item.name.lower() == name.strip().lower():
+                return item.id
+        raise KeyError(f"unknown {kind} {name!r}")
+
+    @staticmethod
+    def _check_state(state: str) -> None:
+        if state.strip().lower() in FORBIDDEN_STATES:
+            raise Refused(f"state {state!r} is set by the user in Plane, not by the agent")
+
+    def create_issue(
+        self, project: str, title: str, body_md: str, label: str, *,
+        state: str = "Backlog", priority: str = "none", parent: str | None = None,
+        relates: tuple[str, ...] = (),
+    ) -> Issue:
+        proj = self.project(project)
+        self._check_state(state)
+        state_id = self._resolve(self.states(proj), state, "state")
+        label_id = self._resolve(self.labels(proj), label, "label")
+        parent_id = None
+        if parent is not None:
+            if parse_ref(parent)[0] != proj.identifier.upper():
+                raise ValueError(f"parent {parent} is not in project {proj.identifier}")
+            parent_id = self.get_issue(parent).id
+        body = {
+            "name": title, "description_html": md_to_html(body_md), "state": state_id,
+            "labels": [label_id], "priority": priority, "parent": parent_id,
+        }
+        created = self._send("POST", f"{self.W}/projects/{proj.id}/issues/", body)
+        ref = f"{proj.identifier}-{created['sequence_id']}"
+        for other in relates:
+            self.relate(ref, other)
+        return self.get_issue(ref)
+
+    def update_issue(
+        self, ref: str, *, state: str | None = None, body_md: str | None = None,
+        title: str | None = None, priority: str | None = None,
+    ) -> Issue:
+        if state is not None:
+            self._check_state(state)
+        issue = self.get_issue(ref)
+        proj = self.project(issue.project)
+        body: dict = {}
+        if state is not None:
+            body["state"] = self._resolve(self.states(proj), state, "state")
+        if body_md is not None:
+            body["description_html"] = md_to_html(body_md)
+        if title is not None:
+            body["name"] = title
+        if priority is not None:
+            body["priority"] = priority
+        self._send("PATCH", f"{self.W}/projects/{proj.id}/issues/{issue.id}/", body)
+        return self.get_issue(ref)
+
+    def _comments_path(self, ref: str) -> str:
+        issue = self.get_issue(ref)
+        return f"{self.W}/projects/{self.project(issue.project).id}/issues/{issue.id}/comments/"
+
+    @staticmethod
+    def _to_comment(raw: dict) -> Comment:
+        actor = raw.get("actor")
+        if isinstance(actor, dict):
+            actor = actor.get("display_name")
+        return Comment(raw["id"], str(actor or ""), raw.get("created_at") or "", html_to_md(raw.get("comment_html")))
+
+    def comment(self, ref: str, text_md: str) -> Comment:
+        raw = self._send("POST", self._comments_path(ref), {"comment_html": md_to_html(text_md)})
+        return self._to_comment(raw)
+
+    def comments(self, ref: str) -> list[Comment]:
+        rows = _paged(self.http, self._comments_path(ref))
+        return sorted((self._to_comment(r) for r in rows), key=lambda c: c.created_at)
+
+    def relate(self, ref: str, other: str) -> Comment:
+        a, n = parse_ref(ref)
+        b, m = parse_ref(other)
+        return self.comment(f"{a}-{n}", f"relates to: {b}-{m}")
+
+    def related(self, ref: str) -> list[str]:
+        out: list[str] = []
+        for c in self.comments(ref):
+            first = c.text_md.split("\n", 1)[0]
+            if not first.lower().startswith("relates to:"):
+                continue
+            for part in first.split(":", 1)[1].split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                ident, n = parse_ref(part)
+                r = f"{ident}-{n}"
+                if r not in out:
+                    out.append(r)
+        return out
