@@ -1,6 +1,6 @@
 import pytest
 
-from ks.convert import html_to_md, md_to_html
+from devsys.convert import html_to_md, md_to_html
 
 SKELETON = "## Why\n\nthe need\n\n## Evidence\n\n- one\n- two\n\n## Judged by\n\n**cosmology**: a test\n"
 

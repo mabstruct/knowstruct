@@ -1,6 +1,6 @@
 import pytest
 
-from ks.refs import parse_ref
+from devsys.refs import parse_ref
 
 
 @pytest.mark.parametrize("s", ["KS-12", "ks-12", "KS 12", " KS-12 "])

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A new repo `~/dev/mabstruct/knowstruct/` with a deterministic Plane client (`ks`), a user-level `/ks` skill with four moves, and the first content seeded into Plane.
+**Goal:** A new repo `~/dev/mabstruct/knowstruct/` with a deterministic Plane client (`dev`), a user-level `/dev` skill with four moves, and the first content seeded into Plane.
 
-**Architecture:** `ks` is a small `uv` Python package: an injectable HTTP layer (`urllib` in production, a fake in tests), a `Plane` facade that speaks Plane's v1 REST in terms of issue references like `KS-12`, markdown↔HTML conversion at the boundary, a digest formatter, and a CLI the skill calls. The skill is markdown in `knowstruct/skill/ks/`, symlinked into `~/.claude/skills/ks/`. No model calls anywhere in the package.
+**Architecture:** `dev` is a small `uv` Python package: an injectable HTTP layer (`urllib` in production, a fake in tests), a `Plane` facade that speaks Plane's v1 REST in terms of issue references like `KS-12`, markdown↔HTML conversion at the boundary, a digest formatter, and a CLI the skill calls. The skill is markdown in `knowstruct/skill/dev/`, symlinked into `~/.claude/skills/dev/`. No model calls anywhere in the package.
 
 **Tech Stack:** Python 3.12, `uv`, `pytest`, stdlib `urllib`, `markdown` (md→HTML), `markdownify` (HTML→md).
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - New repo at `/Users/mab/dev/mabstruct/knowstruct/`, its own git history, branch `main`. Nothing from this plan lands in `zen/` except Task 10's removal of the spec and plan.
-- Package name `ks`, layout `src/ks/`, tests in `tests/`, run with `cd /Users/mab/dev/mabstruct/knowstruct && uv run pytest -q`. Python `>=3.12`.
+- Package name `devsys`, layout `src/devsys/`, tests in `tests/`, run with `cd /Users/mab/dev/mabstruct/knowstruct && uv run pytest -q`. Python `>=3.12`.
 - Secrets: `knowstruct/.env` holds `PLANE_BASE_URL` and `PLANE_API_KEY` (the `ks-agent` token). **The user creates it by moving `zen/.env`; agents never read, move, print or quote it.** A global hook blocks any Bash command naming `.env`. `.gitignore` lists `.env`; `.env.example` is committed with placeholder values. No test reads `.env`; tests inject a fake HTTP layer. Error messages and logs never contain the token.
 - Plane: base `PLANE_BASE_URL` + `/api/v1`; header `x-api-key`. `Http` paths are relative to `/api/v1`; `Plane` prefixes workspace paths with `W = "/workspaces/mabstruct"` (`/users/me/` is the one path outside it). Paths verified on this instance, relative to `W`: `GET /projects/`, `GET /projects/{pid}/states/`, `/labels/`, `GET|POST /projects/{pid}/issues/`, `GET|PATCH /projects/{pid}/issues/{id}/`, `GET /issues/{IDENT-N}/` (workspace-level retrieve by identifier), `GET|POST /projects/{pid}/issues/{id}/comments/`. Pagination: `?per_page=100&cursor=…`, response keys `results`, `next_cursor`, `next_page_results`. **Relations endpoint is 404 on this instance**: cross-project links are comments of the form `relates to: KS-12`.
 - Bodies are HTML in Plane (`description_html`, `comment_html`). The client converts markdown→HTML on write and HTML→markdown on read.
@@ -36,7 +36,7 @@
 ### Task 1: Repo scaffold and configuration
 
 **Files:**
-- Create: `knowstruct/pyproject.toml`, `knowstruct/.gitignore`, `knowstruct/.env.example`, `knowstruct/README.md`, `knowstruct/src/ks/__init__.py`, `knowstruct/src/ks/config.py`
+- Create: `knowstruct/pyproject.toml`, `knowstruct/.gitignore`, `knowstruct/.env.example`, `knowstruct/README.md`, `knowstruct/src/devsys/__init__.py`, `knowstruct/src/devsys/config.py`
 - Test: `knowstruct/tests/test_config.py`
 
 **Interfaces:**
@@ -48,7 +48,7 @@
 
 - [ ] **Step 1: Create the repo and project files**
 
-`git init` in `/Users/mab/dev/mabstruct/knowstruct`, branch `main`. `pyproject.toml`: name `ks`, version `0.1.0`, `requires-python = ">=3.12"`, dependencies `markdown>=3.6`, `markdownify>=0.13`; dev dependency `pytest>=8`; `[project.scripts] ks = "ks.cli:main"`; build backend `hatchling`, `[tool.hatch.build.targets.wheel] packages = ["src/ks"]`. `.gitignore`: `.env`, `.env.*`, `!.env.example`, `.venv/`, `__pycache__/`, `.pytest_cache/`, `*.egg-info/`. `.env.example`: `PLANE_BASE_URL=https://plane.example.com` and `PLANE_API_KEY=replace-me`. `README.md`: three lines — what `ks` is, `uv run pytest -q`, `uv run ks --help`.
+`git init` in `/Users/mab/dev/mabstruct/knowstruct`, branch `main`. `pyproject.toml`: name `devsys`, version `0.1.0`, `requires-python = ">=3.12"`, dependencies `markdown>=3.6`, `markdownify>=0.13`; dev dependency `pytest>=8`; `[project.scripts] dev = "devsys.cli:main"`; build backend `hatchling`, `[tool.hatch.build.targets.wheel] packages = ["src/devsys"]`. `.gitignore`: `.env`, `.env.*`, `!.env.example`, `.venv/`, `__pycache__/`, `.pytest_cache/`, `*.egg-info/`. `.env.example`: `PLANE_BASE_URL=https://plane.example.com` and `PLANE_API_KEY=replace-me`. `README.md`: three lines — what `dev` is, `uv run pytest -q`, `uv run dev --help`.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -70,7 +70,7 @@ def test_load_env_missing_file(tmp_path):
 - [ ] **Step 3: Run tests to verify they fail**
 
 Run: `cd /Users/mab/dev/mabstruct/knowstruct && uv run pytest tests/test_config.py -q`
-Expected: FAIL with `ImportError` / `ModuleNotFoundError: ks.config`
+Expected: FAIL with `ImportError` / `ModuleNotFoundError: devsys.config`
 
 - [ ] **Step 4: Implement `config.py`**
 
@@ -81,8 +81,8 @@ Run: `uv run pytest tests/test_config.py -q` — Expected: `3 passed`
 - [ ] **Step 6: Commit**
 
 ```bash
-git add pyproject.toml .gitignore .env.example README.md src/ks/__init__.py src/ks/config.py tests/test_config.py uv.lock
-git commit -m "feat: scaffold ks package with env loading"
+git add pyproject.toml .gitignore .env.example README.md src/devsys/__init__.py src/devsys/config.py tests/test_config.py uv.lock
+git commit -m "feat: scaffold devsys package with env loading"
 ```
 
 ---
@@ -90,7 +90,7 @@ git commit -m "feat: scaffold ks package with env loading"
 ### Task 2: HTTP layer and Plane projects, states, labels
 
 **Files:**
-- Create: `knowstruct/src/ks/http.py`, `knowstruct/src/ks/plane.py`, `knowstruct/tests/fake_http.py`
+- Create: `knowstruct/src/devsys/http.py`, `knowstruct/src/devsys/plane.py`, `knowstruct/tests/fake_http.py`
 - Test: `knowstruct/tests/test_http.py`, `knowstruct/tests/test_plane_meta.py`
 
 **Interfaces:**
@@ -139,7 +139,7 @@ def test_states_and_labels():
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/http.py src/ks/plane.py tests/fake_http.py tests/test_http.py tests/test_plane_meta.py
+git add src/devsys/http.py src/devsys/plane.py tests/fake_http.py tests/test_http.py tests/test_plane_meta.py
 git commit -m "feat: http layer with key-safe errors; plane projects, states, labels"
 ```
 
@@ -148,8 +148,8 @@ git commit -m "feat: http layer with key-safe errors; plane projects, states, la
 ### Task 3: Issue references and reading issues
 
 **Files:**
-- Modify: `knowstruct/src/ks/plane.py`
-- Create: `knowstruct/src/ks/refs.py`
+- Modify: `knowstruct/src/devsys/plane.py`
+- Create: `knowstruct/src/devsys/refs.py`
 - Test: `knowstruct/tests/test_refs.py`, `knowstruct/tests/test_plane_read.py`
 
 **Interfaces:**
@@ -194,7 +194,7 @@ def test_list_issues_pages_and_filters():
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/refs.py src/ks/plane.py tests/test_refs.py tests/test_plane_read.py
+git add src/devsys/refs.py src/devsys/plane.py tests/test_refs.py tests/test_plane_read.py
 git commit -m "feat: issue references, get_issue and paged list_issues"
 ```
 
@@ -203,8 +203,8 @@ git commit -m "feat: issue references, get_issue and paged list_issues"
 ### Task 4: Markdown ↔ HTML conversion
 
 **Files:**
-- Create: `knowstruct/src/ks/convert.py`
-- Modify: `knowstruct/src/ks/plane.py` (`_to_issue` uses `html_to_md`)
+- Create: `knowstruct/src/devsys/convert.py`
+- Modify: `knowstruct/src/devsys/plane.py` (`_to_issue` uses `html_to_md`)
 - Test: `knowstruct/tests/test_convert.py`
 
 **Interfaces:**
@@ -237,7 +237,7 @@ def test_empty(): assert html_to_md("<p></p>") == "" and md_to_html("") == "<p><
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/convert.py src/ks/plane.py tests/test_convert.py
+git add src/devsys/convert.py src/devsys/plane.py tests/test_convert.py
 git commit -m "feat: markdown/html conversion at the Plane boundary"
 ```
 
@@ -246,7 +246,7 @@ git commit -m "feat: markdown/html conversion at the Plane boundary"
 ### Task 5: Writing issues, comments, relations, decisions
 
 **Files:**
-- Modify: `knowstruct/src/ks/plane.py`
+- Modify: `knowstruct/src/devsys/plane.py`
 - Test: `knowstruct/tests/test_plane_write.py`
 
 **Interfaces:**
@@ -311,7 +311,7 @@ def test_related_parses_comments():
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/plane.py tests/test_plane_write.py
+git add src/devsys/plane.py tests/test_plane_write.py
 git commit -m "feat: create/update issues with refused terminal states, comments, relations, decisions"
 ```
 
@@ -320,7 +320,7 @@ git commit -m "feat: create/update issues with refused terminal states, comments
 ### Task 6: Digest
 
 **Files:**
-- Create: `knowstruct/src/ks/digest.py`
+- Create: `knowstruct/src/devsys/digest.py`
 - Test: `knowstruct/tests/test_digest.py`
 
 **Interfaces:**
@@ -365,7 +365,7 @@ def test_age(): assert age("2026-10-19T10:00:00Z", "2026-10-22") == "3d"
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/digest.py tests/test_digest.py
+git add src/devsys/digest.py tests/test_digest.py
 git commit -m "feat: digest of review, todo and open tasks"
 ```
 
@@ -374,22 +374,22 @@ git commit -m "feat: digest of review, todo and open tasks"
 ### Task 7: CLI
 
 **Files:**
-- Create: `knowstruct/src/ks/cli.py`
+- Create: `knowstruct/src/devsys/cli.py`
 - Test: `knowstruct/tests/test_cli.py`
 
 **Interfaces:**
 - Consumes: everything above.
 - Produces: `main(argv: list[str] | None = None, plane: Plane | None = None) -> int` — `plane=None` builds `Plane(UrlHttp(load_env()))`; tests pass a `Plane(FakeHttp(...))`. Prints to stdout; errors (`PlaneError`, `Refused`, `KeyError`, `ValueError`, `ConfigError`) print `error: {message}` to stderr and return 2. Subcommands:
-  - `ks whoami` — `plane.me()`.
-  - `ks projects` — one line per project: `IDENT  name`.
-  - `ks digest` — `digest(plane, today)`; `--today YYYY-MM-DD` for tests, default local date.
-  - `ks show REF [--json]` — text: `REF  kind  title`, `state: … priority: … parent: … labels: …`, blank line, `body_md`, blank line, `### comments`, each `-- actor (created_at)` then text; `related: …` line when any. `--json`: `asdict(issue)` plus `comments` and `related`.
-  - `ks list PROJECT [--state S] [--label L]` — `line()` per issue without decisions.
-  - `ks create PROJECT --label L --title T (--body-file F | --body TEXT) [--state S] [--priority P] [--parent REF] [--relates REF ...]` — prints the new `REF`.
-  - `ks update REF [--state S] [--body-file F] [--title T] [--priority P]` — prints `REF  state` after.
-  - `ks comment REF (--file F | --text TEXT)` — prints the comment id.
-  - `ks relate REF OTHER` — prints `REF relates to OTHER`.
-  - `ks decision REF` — prints `chosen: B`, `rejected: …`, or `none`.
+  - `dev whoami` — `plane.me()`.
+  - `dev projects` — one line per project: `IDENT  name`.
+  - `dev digest` — `digest(plane, today)`; `--today YYYY-MM-DD` for tests, default local date.
+  - `dev show REF [--json]` — text: `REF  kind  title`, `state: … priority: … parent: … labels: …`, blank line, `body_md`, blank line, `### comments`, each `-- actor (created_at)` then text; `related: …` line when any. `--json`: `asdict(issue)` plus `comments` and `related`.
+  - `dev list PROJECT [--state S] [--label L]` — `line()` per issue without decisions.
+  - `dev create PROJECT --label L --title T (--body-file F | --body TEXT) [--state S] [--priority P] [--parent REF] [--relates REF ...]` — prints the new `REF`.
+  - `dev update REF [--state S] [--body-file F] [--title T] [--priority P]` — prints `REF  state` after.
+  - `dev comment REF (--file F | --text TEXT)` — prints the comment id.
+  - `dev relate REF OTHER` — prints `REF relates to OTHER`.
+  - `dev decision REF` — prints `chosen: B`, `rejected: …`, or `none`.
   Body files are read as UTF-8 markdown.
 
 - [ ] **Step 1: Write the failing tests**
@@ -411,31 +411,31 @@ def test_unknown_project_exit_2(capsys): assert main(["list", "NOPE"], plane=pla
 
 - [ ] **Step 2: Run tests to verify they fail** — Expected: FAIL, module missing
 - [ ] **Step 3: Implement `cli.py` with `argparse`**
-- [ ] **Step 4: Run tests to verify they pass** — `uv run pytest -q`; also `uv run ks --help` prints the subcommands — Expected: all pass, help lists ten subcommands
+- [ ] **Step 4: Run tests to verify they pass** — `uv run pytest -q`; also `uv run dev --help` prints the subcommands — Expected: all pass, help lists ten subcommands
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ks/cli.py tests/test_cli.py
-git commit -m "feat: ks command line"
+git add src/devsys/cli.py tests/test_cli.py
+git commit -m "feat: dev command line"
 ```
 
 ---
 
-### Task 8: The `/ks` skill and its templates
+### Task 8: The `/dev` skill and its templates
 
 **Files:**
-- Create: `knowstruct/skill/ks/SKILL.md`, `knowstruct/skill/ks/templates/requirement.md`, `proposal.md`, `analysis.md`, `spike.md`, `task.md`, `phase-result.md`, `knowstruct/skill/ks/prompts/analysis-agent.md`
-- Create: symlink `~/.claude/skills/ks` → `/Users/mab/dev/mabstruct/knowstruct/skill/ks`
+- Create: `knowstruct/skill/dev/SKILL.md`, `knowstruct/skill/dev/templates/requirement.md`, `proposal.md`, `analysis.md`, `spike.md`, `task.md`, `phase-result.md`, `knowstruct/skill/dev/prompts/analysis-agent.md`
+- Create: symlink `~/.claude/skills/dev` → `/Users/mab/dev/mabstruct/knowstruct/skill/dev`
 - Test: `knowstruct/tests/test_skill.py`
 
 **Interfaces:**
-- Consumes: the CLI subcommands of Task 7 (the skill calls `uv run --project /Users/mab/dev/mabstruct/knowstruct ks …` and nothing else).
+- Consumes: the CLI subcommands of Task 7 (the skill calls `uv run --project /Users/mab/dev/mabstruct/knowstruct dev …` and nothing else).
 - Produces: a skill the session invokes; no Python.
 
 - [ ] **Step 1: Write the failing test**
 
 ```python
-SKILL = Path(__file__).parents[1] / "skill" / "ks" / "SKILL.md"
+SKILL = Path(__file__).parents[1] / "skill" / "dev" / "SKILL.md"
 
 def test_skill_only_calls_existing_subcommands():
     used = set(re.findall(r"\bks (whoami|projects|digest|show|list|create|update|comment|relate|decision|\w+)\b", SKILL.read_text()))
@@ -455,21 +455,21 @@ def test_skill_never_sets_done():
 
 - [ ] **Step 3: Write `SKILL.md`**
 
-Frontmatter `name: ks`, `description: Lead agent for the KNOWSTRUCT requirement system in Plane — digest, capture, walk through, run. Use for status, backlog, requirements, proposals, spikes, analyses, tasks.` Body, in this order: the one rule (agents never set Done/Cancelled; nothing is written to Plane the user has not seen in chat first; the token is never read or printed; all Plane access via `uv run --project /Users/mab/dev/mabstruct/knowstruct ks …`); the four moves from spec §4.4 each with the exact `ks` commands it runs and what it shows the user before writing; **capture** fills a template from `templates/` and shows it; **walk through** runs `ks show REF`, re-runs it before any `ks update --body-file`, and prints the full replacement body in chat first; **run** for `analysis` dispatches read-only agents with `prompts/analysis-agent.md` (model per spec §4.8: Opus), writes the long form to `docs/analysis/<approach>.md`, posts the summary with `ks comment` and sets `--state Review`; **run** for `spike` with the time box from the ticket; **run** for `iteration` is out of v1 and says so. End with the `chosen:`/`rejected:` convention and the skills-per-stage table from spec §4.7 condensed to one line per stage.
+Frontmatter `name: dev`, `description: Lead agent for the KNOWSTRUCT requirement system in Plane — digest, capture, walk through, run. Use for status, backlog, requirements, proposals, spikes, analyses, tasks.` Body, in this order: the one rule (agents never set Done/Cancelled; nothing is written to Plane the user has not seen in chat first; the token is never read or printed; all Plane access via `uv run --project /Users/mab/dev/mabstruct/knowstruct dev …`); the four moves from spec §4.4 each with the exact `dev` commands it runs and what it shows the user before writing; **capture** fills a template from `templates/` and shows it; **walk through** runs `dev show REF`, re-runs it before any `dev update --body-file`, and prints the full replacement body in chat first; **run** for `analysis` dispatches read-only agents with `prompts/analysis-agent.md` (model per spec §4.8: Opus), writes the long form to `docs/analysis/<approach>.md`, posts the summary with `dev comment` and sets `--state Review`; **run** for `spike` with the time box from the ticket; **run** for `iteration` is out of v1 and says so. End with the `chosen:`/`rejected:` convention and the skills-per-stage table from spec §4.7 condensed to one line per stage.
 
 - [ ] **Step 4: Write the templates** from spec §4.3, each heading on its own line with a one-line italic hint under it; `analysis.md` has the six questions as `## ` headings plus `## Candidate requirements` and a `Budget:` line; `spike.md` has `Question`, `Time box`, `Domain`, `Result`, `Proposal`; `task.md` has `Owner` and `Done when`; `phase-result.md` has `Built`, `Verified how`, `Look at`, `Open`.
 
 - [ ] **Step 5: Write `prompts/analysis-agent.md`** — the read-only analysis prompt: the approach name and folders (placeholders `{approach}`, `{folders}`), the reading rule from spec §4.6 (prompts, skills, workflow definitions, docs, configuration, produced outputs; no code bodies; skip `node_modules/`, `.venv/`, binaries, papers), the token cap placeholder `{cap}`, the six questions, the output: `docs/analysis/{approach}.md` long form and a ≤ 300-word summary with candidate requirements as one line each; "if the cap runs out, report what was covered and what was skipped".
 
-- [ ] **Step 6: Create the symlink** — `ln -s /Users/mab/dev/mabstruct/knowstruct/skill/ks ~/.claude/skills/ks` (skip if it exists).
+- [ ] **Step 6: Create the symlink** — `ln -s /Users/mab/dev/mabstruct/knowstruct/skill/dev ~/.claude/skills/dev` (skip if it exists).
 
 - [ ] **Step 7: Run tests to verify they pass** — `uv run pytest -q` — Expected: all pass
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add skill/ks/SKILL.md skill/ks/templates skill/ks/prompts tests/test_skill.py
-git commit -m "feat: /ks skill with four moves, ticket templates and analysis prompt"
+git add skill/dev/SKILL.md skill/dev/templates skill/dev/prompts tests/test_skill.py
+git commit -m "feat: /dev skill with four moves, ticket templates and analysis prompt"
 ```
 
 ---
@@ -478,7 +478,7 @@ git commit -m "feat: /ks skill with four moves, ticket templates and analysis pr
 
 **Files:**
 - Create: `knowstruct/docs/tickets/ks-requirement-knowledge-system.md`, `analysis-clawstruct.md`, `analysis-construct.md`, `analysis-zenstruct.md`, `analysis-what-got-lost.md`, `proposal-zen-ask-v2.md`, `task-revoke-old-token.md`, `task-smtp-decision.md`, `task-delete-book-ingest-branch.md`, `knowstruct/scripts/seed.sh`
-- Test: `knowstruct/tests/test_seed.py` (static: the script only calls `ks create` and `ks relate`, every `--body-file` exists, every `--label` is a kind)
+- Test: `knowstruct/tests/test_seed.py` (static: the script only calls `dev create` and `dev relate`, every `--body-file` exists, every `--label` is a kind)
 
 **Interfaces:**
 - Consumes: the CLI. Live Plane; this task is the first real write and the first check that `ks-agent` can create issues.
@@ -515,11 +515,11 @@ The four analysis bodies: the `analysis.md` template filled with approach name, 
 
 Three task bodies: `Owner: user`, one-line `Done when`.
 
-- [ ] **Step 2: Write `scripts/seed.sh`** — `set -euo pipefail`; `KS="uv run --project $(dirname "$0")/.. ks"`; creates in order: the KS requirement (`--state Review --priority high`) capturing its ref; four analyses (`--state Todo`; the CONSTRUCT one with `--parent CONSTRUCT-1`; each with `--relates $REQ`); the proposal in ZENSTRUCT (`--state Backlog`, `--relates $REQ`, body with `KS-<n>` substituted via `sed`); the three tasks in KS (`--state Backlog`, priorities `high`, `low`, `low`). Prints every ref. Guard: refuses to run twice by checking `$KS list KS --label requirement` for the title first.
+- [ ] **Step 2: Write `scripts/seed.sh`** — `set -euo pipefail`; `DEV="uv run --project $(dirname "$0")/.. dev"`; creates in order: the KS requirement (`--state Review --priority high`) capturing its ref; four analyses (`--state Todo`; the CONSTRUCT one with `--parent CONSTRUCT-1`; each with `--relates $REQ`); the proposal in ZENSTRUCT (`--state Backlog`, `--relates $REQ`, body with `KS-<n>` substituted via `sed`); the three tasks in KS (`--state Backlog`, priorities `high`, `low`, `low`). Prints every ref. Guard: refuses to run twice by checking `$DEV list KS --label requirement` for the title first.
 
 - [ ] **Step 3: Write and run the static test** — Expected: PASS
 
-- [ ] **Step 4: Run the seed** — `bash scripts/seed.sh` — Expected: nine refs printed; then `uv run ks digest` shows one line under *waiting on you*, four under *approved, nobody on it*, three under *open tasks*. If `.env` is absent the script fails with `error: missing … .env` and the task stops here: report it, do not work around it.
+- [ ] **Step 4: Run the seed** — `bash scripts/seed.sh` — Expected: nine refs printed; then `uv run dev digest` shows one line under *waiting on you*, four under *approved, nobody on it*, three under *open tasks*. If `.env` is absent the script fails with `error: missing … .env` and the task stops here: report it, do not work around it.
 
 - [ ] **Step 5: Commit**
 
@@ -538,7 +538,7 @@ git commit -m "feat: seed the first requirement, analyses, proposal and tasks"
 - Delete (in `zen/`): the same two files, one commit there.
 
 - [ ] **Step 1: Copy both files into `knowstruct/docs/superpowers/…`; fix the spec's §4.5 sentence "moves there from `zen/docs/` when the repo exists" to "lives here"; set the plan's **Spec:** line to the new path.**
-- [ ] **Step 2: README** — sections: what KNOWSTRUCT is (two sentences from spec §1), setup (`uv sync`; create `.env` from `.env.example` with the `ks-agent` token; the skill symlink), use (`uv run ks digest`, `ks show`, the four moves by name), test (`uv run pytest -q`), where the long-form analyses go.
+- [ ] **Step 2: README** — sections: what KNOWSTRUCT is (two sentences from spec §1), setup (`uv sync`; create `.env` from `.env.example` with the `ks-agent` token; the skill symlink), use (`uv run dev digest`, `dev show`, the four moves by name), test (`uv run pytest -q`), where the long-form analyses go.
 - [ ] **Step 3: Run `uv run pytest -q`** — Expected: all pass (nothing changed in code)
 - [ ] **Step 4: Commit in `knowstruct`** — `git add docs README.md && git commit -m "docs: design, plan and README"`
 - [ ] **Step 5: In `zen/`, `git rm` the two files and commit** — `git commit -m "docs: requirement-system design and plan moved to knowstruct"`.

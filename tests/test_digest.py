@@ -1,7 +1,7 @@
 from fake_http import FakeHttp
 
-from ks.digest import age, digest
-from ks.plane import Plane
+from devsys.digest import age, digest
+from devsys.plane import Plane
 
 W = "/workspaces/mabstruct"
 P = W + "/projects/"

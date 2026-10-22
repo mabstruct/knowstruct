@@ -1,8 +1,8 @@
 import pytest
 from fake_http import FakeHttp
 
-from ks.http import PlaneError
-from ks.plane import Plane
+from devsys.http import PlaneError
+from devsys.plane import Plane
 
 W = "/workspaces/mabstruct"
 P = W + "/projects/"

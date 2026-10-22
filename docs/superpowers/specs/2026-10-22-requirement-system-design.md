@@ -123,7 +123,7 @@ Phase result (comment on the iteration): built, verified how, look at, open.
 
 ### 4.4 The lead agent
 
-A Claude Code skill, working name `/ks`, backed by a small deterministic Plane client (`ks` package: `uv` project, Python, urllib, loads `.env`, prints never the key). The skill has four moves; the user names one or the agent picks from context:
+A Claude Code skill, working name `/dev`, backed by a small deterministic Plane client (`devsys` package: `uv` project, Python, urllib, loads `.env`, prints never the key). The skill has four moves; the user names one or the agent picks from context:
 
 1. **digest** — list what waits in `Review`, what is `Todo` with nobody on it, and the open `task` issues with their priority, across the four projects, with one line each. Default move at session start when the user asks for status.
 2. **capture** — turn the current conversation into issues: ideas, a requirement draft, an analysis. Shows the skeletons filled in before writing to Plane; writes on the user's yes.
@@ -138,9 +138,9 @@ The client exposes roughly: `list_issues(project, state=None, label=None)`, `get
 
 ### 4.5 Where things live
 
-My call: a new, small repo `~/dev/mabstruct/knowstruct/`, created in this build, holds the `ks` client (a `uv` project), `.env` (gitignored, with a committed `.env.example`), `docs/analysis/` (the long-form analyses) and this design. `zen/` stays app development for ZEN only, per the user's standing rule, and nothing of this lands in `zen/` product code.
+My call: a new, small repo `~/dev/mabstruct/knowstruct/`, created in this build, holds the `dev` client (a `uv` project), `.env` (gitignored, with a committed `.env.example`), `docs/analysis/` (the long-form analyses) and this design. `zen/` stays app development for ZEN only, per the user's standing rule, and nothing of this lands in `zen/` product code.
 
-The `/ks` skill is a **user-level** skill in `~/.claude/skills/ks/`, not a project skill, so it is available whichever repo a session starts in (an iteration later commits into `zen/`; an analysis reads `construct/`). It runs the client with `uv run --project ~/dev/mabstruct/knowstruct ks …`; the client locates `.env` next to its own `pyproject.toml`, so the session's working directory does not matter.
+The `/dev` skill is a **user-level** skill in `~/.claude/skills/dev/`, not a project skill, so it is available whichever repo a session starts in (an iteration later commits into `zen/`; an analysis reads `construct/`). It runs the client with `uv run --project ~/dev/mabstruct/knowstruct dev …`; the client locates `.env` next to its own `pyproject.toml`, so the session's working directory does not matter.
 
 ### 4.6 First content
 
@@ -155,7 +155,7 @@ In this order, each its own ticket:
 
 ### 4.7 Skills per stage
 
-Subagents do not pick up skills on their own: the superpowers entry skill tells a dispatched subagent to ignore it, so a subagent follows only what its agent definition or its prompt says. Rule: **the session that runs `/ks` invokes the process skills; agent definitions carry their working rules inline** (as `zen-implementer` already does with TDD). Anything an agent must obey — ZEN hard rules, no network in `tools/`, the token never printed — is repeated in its definition, never assumed from a skill.
+Subagents do not pick up skills on their own: the superpowers entry skill tells a dispatched subagent to ignore it, so a subagent follows only what its agent definition or its prompt says. Rule: **the session that runs `/dev` invokes the process skills; agent definitions carry their working rules inline** (as `zen-implementer` already does with TDD). Anything an agent must obey — ZEN hard rules, no network in `tools/`, the token never printed — is repeated in its definition, never assumed from a skill.
 
 | stage | skill | who runs it |
 |---|---|---|
@@ -175,8 +175,8 @@ Same rule as ZEN's baseline: a cheap model where the work carries out something 
 
 | agent | model | why |
 |---|---|---|
-| lead agent (`/ks`: digest, capture, walk through, orchestrating runs) | the session model (`/model`) | interactive, judgement-heavy, small context per move |
-| `ks` client | none | deterministic Python |
+| lead agent (`/dev`: digest, capture, walk through, orchestrating runs) | the session model (`/model`) | interactive, judgement-heavy, small context per move |
+| `dev` client | none | deterministic Python |
 | analysis agents (three, read-only, long reading) | premium: Opus 5.5 | judgement over large, messy material; three runs, cost bounded |
 | "what got lost" analysis | the session model | the lead agent does it itself, with conversation context |
 | proposal writer | premium: Opus 5.5 | options and trade-offs are judgement |

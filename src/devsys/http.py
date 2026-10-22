@@ -4,7 +4,7 @@ import urllib.error
 import urllib.request
 from typing import Any, Protocol
 
-from ks.config import Env
+from devsys.config import Env
 
 
 _sleep = time.sleep

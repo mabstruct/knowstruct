@@ -1,9 +1,9 @@
 import re
 from dataclasses import dataclass
 
-from ks.convert import html_to_md, md_to_html
-from ks.http import Http, PlaneError
-from ks.refs import parse_ref
+from devsys.convert import html_to_md, md_to_html
+from devsys.http import Http, PlaneError
+from devsys.refs import parse_ref
 
 
 @dataclass(frozen=True)

@@ -3,8 +3,8 @@ import json
 import pytest
 from fake_http import FakeHttp
 
-from ks.cli import main
-from ks.plane import Plane
+from devsys.cli import main
+from devsys.plane import Plane
 
 W = "/workspaces/mabstruct"
 P = W + "/projects/"

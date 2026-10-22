@@ -5,10 +5,10 @@ from dataclasses import asdict
 from datetime import date
 from pathlib import Path
 
-from ks.config import ConfigError, load_env
-from ks.digest import digest, kind, line
-from ks.http import PlaneError, UrlHttp
-from ks.plane import PartialWrite, Plane, Refused, decision
+from devsys.config import ConfigError, load_env
+from devsys.digest import digest, kind, line
+from devsys.http import PlaneError, UrlHttp
+from devsys.plane import PartialWrite, Plane, Refused, decision
 
 
 def _read(path: str) -> str:
@@ -43,7 +43,7 @@ def _decision(plane: Plane, args: argparse.Namespace) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="ks", description="KNOWSTRUCT command line for Plane")
+    p = argparse.ArgumentParser(prog="dev", description="KNOWSTRUCT dev system — command line for Plane")
     sub = p.add_subparsers(dest="cmd", required=True, metavar="COMMAND")
 
     sub.add_parser("whoami", help="show the API user").set_defaults(

@@ -2,7 +2,7 @@
 # One-time seed of the first KNOWSTRUCT content. Refuses to run twice.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-KS="uv run --project $HERE ks"
+DEV="uv run --project $HERE dev"
 T="$HERE/docs/tickets"
 
 if $KS list KS --label requirement | grep -q "The knowledge system"; then

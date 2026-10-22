@@ -1,6 +1,6 @@
 from datetime import date
 
-from ks.plane import Issue, Plane, decision
+from devsys.plane import Issue, Plane, decision
 
 KINDS = ("idea", "analysis", "requirement", "proposal", "spike", "iteration", "task")
 PROJECT_ORDER = ("KS", "CLAWSTRUCT", "CONSTRUCT", "ZENSTRUCT")

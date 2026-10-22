@@ -1,11 +1,11 @@
 import re
 from pathlib import Path
 
-SKILL = Path(__file__).parents[1] / "skill" / "ks" / "SKILL.md"
+SKILL = Path(__file__).parents[1] / "skill" / "dev" / "SKILL.md"
 
 
 def test_skill_only_calls_existing_subcommands():
-    used = set(re.findall(r"\bks (whoami|projects|digest|show|list|create|update|comment|relate|decision|\w+)\b", SKILL.read_text()))
+    used = set(re.findall(r"\bdev (whoami|projects|digest|show|list|create|update|comment|relate|decision|\w+)\b", SKILL.read_text()))
     assert used <= {"whoami", "projects", "digest", "show", "list", "create", "update", "comment", "relate", "decision"}
 
 
@@ -26,18 +26,18 @@ ROOT = Path(__file__).parents[1]
 
 def test_skill_names_both_analysis_paths():
     text = SKILL.read_text()
-    assert "ks-analyst" in text and "session model" in text
+    assert "dev-analyst" in text and "session model" in text
     assert "does not exist yet" not in text
 
 
 def test_analyst_agent_has_no_shell():
-    agent = (ROOT / "agents" / "ks-analyst.md").read_text()
+    agent = (ROOT / "agents" / "dev-analyst.md").read_text()
     front = agent.split("---")[1]
     tools = next(l for l in front.splitlines() if l.startswith("tools:"))
-    assert "name: ks-analyst" in front and "Bash" not in tools
+    assert "name: dev-analyst" in front and "Bash" not in tools
     assert ".env" in agent
 
 
-def test_analysis_prompt_forbids_env_and_ks():
+def test_analysis_prompt_forbids_env_and_dev():
     prompt = (SKILL.parent / "prompts" / "analysis-agent.md").read_text()
-    assert ".env" in prompt and "{slug}" in prompt and "do not run `ks`" in prompt.lower()
+    assert ".env" in prompt and "{slug}" in prompt and "do not run `dev`" in prompt.lower()

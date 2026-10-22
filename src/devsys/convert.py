@@ -1,4 +1,4 @@
-"""Markdown <-> HTML at the Plane boundary (Plane stores HTML, ks speaks markdown).
+"""Markdown <-> HTML at the Plane boundary (Plane stores HTML, dev speaks markdown).
 
 md -> HTML is CommonMark (markdown-it-py) with tables and raw HTML off, so text such as
 `<approach>` is escaped rather than swallowed. HTML -> md is markdownify, tuned so that its

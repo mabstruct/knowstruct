@@ -4,15 +4,15 @@ import urllib.error
 
 import pytest
 
-from ks.config import Env
-from ks.http import PlaneError, UrlHttp
+from devsys.config import Env
+from devsys.http import PlaneError, UrlHttp
 
 
 def test_urlhttp_error_hides_key(monkeypatch):
     def boom(req, timeout=None):
         raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, io.BytesIO(b'{"detail":"bad"}'))
 
-    monkeypatch.setattr("ks.http.urllib.request.urlopen", boom)
+    monkeypatch.setattr("devsys.http.urllib.request.urlopen", boom)
     http = UrlHttp(Env("https://p.example", "SECRET-KEY"))
     with pytest.raises(PlaneError) as e:
         http.request("GET", "/users/me/")
@@ -38,7 +38,7 @@ def test_urlhttp_sends_header_and_json(monkeypatch):
         seen["req"], seen["timeout"] = req, timeout
         return Resp()
 
-    monkeypatch.setattr("ks.http.urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("devsys.http.urllib.request.urlopen", fake_open)
     http = UrlHttp(Env("https://p.example", "k"))
     status, data = http.request("POST", "/workspaces/mabstruct/projects/", {"a": 1})
     req = seen["req"]
@@ -74,8 +74,8 @@ def _seq_open(monkeypatch, outcomes):
         raise urllib.error.HTTPError(req.full_url, code, "x", headers, io.BytesIO(b"limited"))
 
     sleeps = []
-    monkeypatch.setattr("ks.http.urllib.request.urlopen", fake_open)
-    monkeypatch.setattr("ks.http._sleep", sleeps.append)
+    monkeypatch.setattr("devsys.http.urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("devsys.http._sleep", sleeps.append)
     return sleeps
 
 

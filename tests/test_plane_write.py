@@ -1,7 +1,7 @@
 import pytest
 from fake_http import FakeHttp
 
-from ks.plane import Comment, PartialWrite, Plane, Refused, decision
+from devsys.plane import Comment, PartialWrite, Plane, Refused, decision
 
 W = "/workspaces/mabstruct"
 P = W + "/projects/"

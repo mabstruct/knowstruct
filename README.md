@@ -1,25 +1,25 @@
 # KNOWSTRUCT
 
-KNOWSTRUCT is a requirement system for the knowledge-system effort: the *why* is written down and reviewed before any plan or build exists. Plane is the backlog, the user is product owner and reviewer, and agents bring analysis, requirements, proposals and spikes as tickets. `ks` is its deterministic command-line client for a self-hosted Plane instance, used by the `/ks` Claude Code skill.
+KNOWSTRUCT is a requirement system for the knowledge-system effort: the *why* is written down and reviewed before any plan or build exists. Plane is the backlog, the user is product owner and reviewer, and agents bring analysis, requirements, proposals and spikes as tickets. `dev` is its deterministic command-line client for a self-hosted Plane instance, used by the `/dev` Claude Code skill.
 
 ## Setup
 
 ```
 uv sync
 cp .env.example .env        # put the ks-agent personal access token in it (never your own)
-ln -s $(pwd)/skill/ks ~/.claude/skills/ks
-mkdir -p ~/.claude/agents && ln -s $(pwd)/agents/ks-analyst.md ~/.claude/agents/ks-analyst.md
+ln -s $(pwd)/skill/dev ~/.claude/skills/dev
+mkdir -p ~/.claude/agents && ln -s $(pwd)/agents/dev-analyst.md ~/.claude/agents/dev-analyst.md
 ```
 
 ## Use
 
 ```
-uv run ks digest
-uv run ks show KS-1
-uv run ks --help
+uv run dev digest
+uv run dev show KS-1
+uv run dev --help
 ```
 
-The `/ks` skill has four moves:
+The `/dev` skill has four moves:
 
 - **digest** — what waits in `Review`, what is `Todo` with nobody on it, and the open tasks, one line each.
 - **capture** — turn the conversation into tickets (ideas, a requirement draft, an analysis), written after you have seen them in full.
@@ -34,9 +34,9 @@ uv run pytest -q
 
 ## Layout
 
-- `src/ks/` — the `ks` client.
-- `skill/ks/` — the `/ks` Claude Code skill (symlinked into `~/.claude/skills/`); ticket templates in `skill/ks/templates/`, the analysis prompt in `skill/ks/prompts/`.
-- `agents/ks-analyst.md` — the read-only analyst agent `run` dispatches for analyses (symlinked into `~/.claude/agents/`).
+- `src/devsys/` — the `dev` client.
+- `skill/dev/` — the `/dev` Claude Code skill (symlinked into `~/.claude/skills/`); ticket templates in `skill/dev/templates/`, the analysis prompt in `skill/dev/prompts/`.
+- `agents/dev-analyst.md` — the read-only analyst agent `run` dispatches for analyses (symlinked into `~/.claude/agents/`).
 - `docs/tickets/` — the text of the seeded tickets.
 - `docs/analysis/` — long-form analyses land here.
 - `docs/superpowers/` — the design and the build plan.
