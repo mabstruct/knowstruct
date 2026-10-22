@@ -100,3 +100,11 @@ def test_retry_429_gives_up(monkeypatch):
         http.request("GET", "/x/")
     assert e.value.status == 429
     assert sleeps == [1, 2, 4, 8]
+
+
+@pytest.mark.parametrize("header,expected", [("999", 60), ("-5", 0), ("2.5", 2.5)])
+def test_retry_after_is_clamped(monkeypatch, header, expected):
+    sleeps = _seq_open(monkeypatch, [(429, {"Retry-After": header}), None])
+    http = UrlHttp(Env("https://p.example", "k"))
+    assert http.request("GET", "/x/")[0] == 200
+    assert sleeps == [expected]

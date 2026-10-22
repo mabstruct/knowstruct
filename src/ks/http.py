@@ -9,6 +9,7 @@ from ks.config import Env
 
 _sleep = time.sleep
 MAX_ATTEMPTS = 5
+MAX_RETRY_AFTER = 60
 
 
 class PlaneError(Exception):
@@ -45,20 +46,31 @@ class UrlHttp:
                     status, raw = resp.status, resp.read()
                 break
             except urllib.error.HTTPError as e:
-                if e.code == 429 and attempt < MAX_ATTEMPTS - 1:
-                    _sleep(_retry_delay(e, attempt))
+                try:
+                    if e.code == 429 and attempt < MAX_ATTEMPTS - 1:
+                        delay = _retry_delay(e, attempt)
+                        retry = True
+                    else:
+                        err_body = e.read().decode("utf-8", "replace")
+                        retry = False
+                finally:
+                    e.close()
+                if retry:
+                    _sleep(delay)
                     continue
-                raise PlaneError(e.code, path, e.read().decode("utf-8", "replace")) from None
+                raise PlaneError(e.code, path, err_body) from None
         if status >= 400:
             raise PlaneError(status, path, raw.decode("utf-8", "replace"))
         return status, (json.loads(raw) if raw else None)
 
 
 def _retry_delay(err: urllib.error.HTTPError, attempt: int) -> float:
+    """Seconds to wait: Retry-After clamped to 0..MAX_RETRY_AFTER, else exponential backoff."""
     ra = err.headers.get("Retry-After") if err.headers else None
     try:
         if ra is not None:
-            return float(ra) if "." in ra else int(ra)
+            s = float(ra) if "." in ra else int(ra)
+            return min(max(s, 0), MAX_RETRY_AFTER)
     except ValueError:
         pass
     return 2**attempt
