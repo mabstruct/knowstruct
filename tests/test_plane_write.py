@@ -142,3 +142,17 @@ def test_related_parses_comments(plane, fake):
         raw_comment("c3", "<p>unrelated</p>", "2026-10-03T00:00:00Z"),
     ])
     assert plane.related("KS-7") == ["KS-1", "ZENSTRUCT-3"]
+
+
+def test_create_issue_invalid_relates_makes_no_post(plane, fake):
+    with pytest.raises(ValueError):
+        plane.create_issue("KS", "T", "", "idea", relates=("garbage",))
+    assert not posts(fake)
+
+
+def test_related_skips_free_text_and_extracts_mixed(plane, fake):
+    fake.routes[("GET", C + "?per_page=100")] = page([
+        raw_comment("c1", "<p>relates to: the login bug</p>", "2026-10-01T00:00:00Z"),
+        raw_comment("c2", "<p>relates to: KS-1 (see notes)</p>", "2026-10-02T00:00:00Z"),
+    ])
+    assert plane.related("KS-7") == ["KS-1"]

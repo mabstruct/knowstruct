@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from ks.convert import html_to_md, md_to_html
@@ -33,6 +34,7 @@ class Issue:
     updated_at: str
 
 
+_REF_IN_TEXT = re.compile(r"\b[A-Za-z][A-Za-z0-9]*-\d+\b")
 FORBIDDEN_STATES = ("done", "cancelled")
 
 
@@ -185,13 +187,14 @@ class Plane:
             if parse_ref(parent)[0] != proj.identifier.upper():
                 raise ValueError(f"parent {parent} is not in project {proj.identifier}")
             parent_id = self.get_issue(parent).id
+        rel = [f"{a}-{n}" for a, n in (parse_ref(o) for o in relates)]
         body = {
             "name": title, "description_html": md_to_html(body_md), "state": state_id,
             "labels": [label_id], "priority": priority, "parent": parent_id,
         }
         created = self._send("POST", f"{self.W}/projects/{proj.id}/issues/", body)
         ref = f"{proj.identifier}-{created['sequence_id']}"
-        for other in relates:
+        for other in rel:
             self.relate(ref, other)
         return self.get_issue(ref)
 
@@ -245,11 +248,8 @@ class Plane:
             first = c.text_md.split("\n", 1)[0]
             if not first.lower().startswith("relates to:"):
                 continue
-            for part in first.split(":", 1)[1].split(","):
-                part = part.strip()
-                if not part:
-                    continue
-                ident, n = parse_ref(part)
+            for m in _REF_IN_TEXT.finditer(first.split(":", 1)[1]):
+                ident, n = parse_ref(m.group())
                 r = f"{ident}-{n}"
                 if r not in out:
                     out.append(r)
