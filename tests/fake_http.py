@@ -2,7 +2,7 @@ from typing import Any
 
 
 class FakeHttp:
-    """Test double for ks.http.Http. Routes keyed by (method, path)."""
+    """Test double for devsys.http.Http. Routes keyed by (method, path)."""
 
     def __init__(self, routes: dict[tuple[str, str], Any]):
         self.routes = routes

@@ -1,6 +1,6 @@
 import pytest
 
-from ks.config import ConfigError, Env, load_env
+from devsys.config import ConfigError, Env, load_env
 
 
 def test_load_env_reads_file(tmp_path):

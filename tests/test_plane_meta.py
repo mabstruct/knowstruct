@@ -1,7 +1,7 @@
 import pytest
 from fake_http import FakeHttp
 
-from ks.plane import Named, Plane, Project
+from devsys.plane import Named, Plane, Project
 
 P = "/workspaces/mabstruct/projects/"
 
