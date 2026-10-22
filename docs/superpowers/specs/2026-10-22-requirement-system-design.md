@@ -1,6 +1,6 @@
 # KNOWSTRUCT requirement system — backlog, requirement cycle, lead agent
 
-Status: draft, 2026-10-22. From the brainstorm of 2026-10-21/22. This document describes a *development process* and the thin tooling it needs, not a feature of ZEN. It lives here because `zen/` is the only repo in `~/dev/mabstruct/` that this conversation can commit to; see §4.5 for where it should end up.
+Status: draft, 2026-10-22. From the brainstorm of 2026-10-21/22. This document describes a *development process* and the thin tooling it needs, not a feature of ZEN. It lives in `knowstruct/docs/superpowers/`.
 
 ## 1. Intent
 
