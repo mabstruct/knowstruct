@@ -1,5 +1,7 @@
 Approach: *(the approach name, e.g. construct)*
-Budget: *(token cap for the reading, e.g. 400k tokens)*
+
+Budget: *(token cap and model, e.g. `400k tokens of reading, Opus 5.5`, or `session model`)*
+
 Folders: *(the folders this analysis may read)*
 
 ## Meant to do

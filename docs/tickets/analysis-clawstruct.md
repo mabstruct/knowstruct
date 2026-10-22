@@ -1,5 +1,7 @@
 Approach: CLAWSTRUCT
+
 Budget: 400k tokens of reading, Opus 5.5
+
 Folders: mabstruct-workspace/, context evolving/, mabstruct_articles/
 
 ## Meant to do

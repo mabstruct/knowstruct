@@ -77,14 +77,15 @@ For an approved `Todo` issue. First `uv run --project /Users/mab/dev/mabstruct/k
 
 ### run: analysis
 
-1. From the ticket body take the approach name from its `Approach:` line (`{approach}`), the folders (`{folders}`) and the token budget (`{cap}`; if none is on the ticket, 400k tokens and say so). `{ticket}` is the ticket body.
-2. Read `prompts/analysis-agent.md` and fill its four placeholders `{approach}`, `{folders}`, `{cap}`, `{ticket}`.
-3. Set the state (part of running the approved `Todo` ticket the user picked in the confirmation above, no further yes needed): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state "In Progress"`.
-4. Dispatch with your Agent tool: `subagent_type: general-purpose` (not Explore, which cannot write), model `opus`, the filled prompt as its prompt. The agent is read-only on everything except creating that one file `docs/analysis/<approach>.md` (the `docs/analysis/` directory does not exist yet; it creates it). Several analyses are dispatched in parallel, one agent per ticket, in one message. The agent writes `docs/analysis/<approach>.md` in `/Users/mab/dev/mabstruct/knowstruct` and returns a summary of at most 300 words with candidate requirements, one line each. The agent never writes to Plane and never reads `.env`.
-5. Save the summary to a temp file. Show it to the user in chat.
-6. Once the user has seen it in chat (no yes needed; the user approves in `Review`): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file SUMMARYFILE`, then `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state Review`.
-7. Commit the analysis file in the knowstruct repo: `git -C /Users/mab/dev/mabstruct/knowstruct add docs/analysis/<approach>.md` and a commit with a message naming the ticket. Never `git add -A`.
-8. If the agent ran out of cap, its summary says what was covered and skipped; post that as it is. Candidate requirements become `requirement` drafts only through the capture move.
+1. From the ticket body take the approach name from its `Approach:` line (`{approach}`), the folders from `Folders:` (`{folders}`) and the budget from `Budget:` (`{cap}`; if none is on the ticket, 400k tokens and say so). `{ticket}` is the ticket body. Derive `{slug}` from `{approach}` by lower-casing it and replacing spaces with `-` (`what got lost` → `what-got-lost`, `CLAWSTRUCT` → `clawstruct`). The long form is `docs/analysis/{slug}.md` in `/Users/mab/dev/mabstruct/knowstruct`.
+2. Set the state (part of running the approved `Todo` ticket the user picked in the confirmation above, no further yes needed): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state "In Progress"`.
+3. Pick the path from the `Budget:` line:
+   - **(a) a model is named** (e.g. `400k tokens of reading, Opus 5.5`): read `prompts/analysis-agent.md`, fill its placeholders `{approach}`, `{slug}`, `{folders}`, `{cap}`, `{ticket}`, and dispatch with your Agent tool, `subagent_type: ks-analyst`, the filled prompt as its prompt. The agent (`agents/ks-analyst.md` in the knowstruct repo, symlinked into `~/.claude/agents/`) has Read, Grep, Glob and Write only, writes `docs/analysis/{slug}.md` and returns a summary of at most 300 words with candidate requirements, one line each. Several analyses are dispatched in parallel, one agent per ticket, in one message.
+   - **(b) `Budget: session model`**: no dispatch. You read under the same rule as the prompt (prompts, skills, agent and workflow definitions, docs, configuration, produced outputs; no code bodies; skip `node_modules/`, `.venv/`, binaries, papers; `research/` listed only; never any `.env*`), answer the six questions of `prompts/analysis-agent.md`, write the long form to `docs/analysis/{slug}.md` yourself and write the summary of at most 300 words with candidate requirements, one line each.
+4. Save the summary to a temp file. Show it to the user in chat.
+5. Once the user has seen it in chat (no yes needed; the user approves in `Review`): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file SUMMARYFILE`, then `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state Review`.
+6. Commit the analysis file in the knowstruct repo: `git -C /Users/mab/dev/mabstruct/knowstruct add docs/analysis/{slug}.md` and a commit with a message naming the ticket. Never `git add -A`.
+7. If the cap ran out, the summary says what was covered and skipped; post that as it is. Candidate requirements become `requirement` drafts only through the capture move.
 
 ### run: spike
 
@@ -108,7 +109,7 @@ The user decides in Plane: a state change plus a comment whose first line is `ch
 The session that runs this skill invokes the process skills; subagents follow only what their prompt says, so anything an agent must obey is written into its prompt.
 
 - idea to requirement: `brainstorming`, conversation part only; the requirement ticket is the written design.
-- analysis: none; read-only agents with `prompts/analysis-agent.md`; `dispatching-parallel-agents` for several at once.
+- analysis: none; the `ks-analyst` agent with `prompts/analysis-agent.md`, or the session itself when the budget says `session model`; `dispatching-parallel-agents` for several at once.
 - proposal: none; the agent writes options and marks its recommendation.
 - spike: none by design; no TDD, no plan, time box and domain in the prompt.
 - iteration (v1: not run): `brainstorming`, `writing-plans`, `subagent-driven-development`, `verification-before-completion`, `finishing-a-development-branch`, then the phase result.

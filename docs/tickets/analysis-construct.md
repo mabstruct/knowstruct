@@ -1,5 +1,7 @@
 Approach: CONSTRUCT
+
 Budget: 400k tokens of reading, Opus 5.5
+
 Folders: construct/, construct-testws/
 
 ## Meant to do

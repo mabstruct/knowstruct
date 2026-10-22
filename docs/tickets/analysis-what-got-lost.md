@@ -1,5 +1,7 @@
 Approach: what got lost
+
 Budget: session model
+
 Folders: mab-notes/, mabstruct-site/, physicalAI/ (README and structure), research/ (listing only)
 
 ## Meant to do

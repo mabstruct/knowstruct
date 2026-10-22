@@ -1,5 +1,7 @@
 Approach: ZENSTRUCT
+
 Budget: 400k tokens of reading, Opus 5.5
+
 Folders: zen/
 
 ## Meant to do
