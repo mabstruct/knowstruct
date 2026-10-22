@@ -7,8 +7,8 @@ KINDS = {"idea", "analysis", "requirement", "proposal", "spike", "iteration", "t
 
 
 def test_only_create_relate_list():
-    verbs = re.findall(r"\$KS\s+(\S+)", SCRIPT)
-    assert verbs
+    verbs = re.findall(r"\$DEV\s+(\S+)", SCRIPT)
+    assert len(verbs) >= 10
     assert set(verbs) <= {"create", "relate", "list"}
 
 
