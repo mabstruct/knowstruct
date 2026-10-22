@@ -42,6 +42,14 @@ class Refused(Exception):
     pass
 
 
+class PartialWrite(Exception):
+    """The issue was created but a later step failed; `ref` names what exists in Plane."""
+
+    def __init__(self, ref: str, message: str):
+        super().__init__(message)
+        self.ref = ref
+
+
 @dataclass(frozen=True)
 class Comment:
     id: str
@@ -195,7 +203,10 @@ class Plane:
         created = self._send("POST", f"{self.W}/projects/{proj.id}/issues/", body)
         ref = f"{proj.identifier}-{created['sequence_id']}"
         for other in rel:
-            self.relate(ref, other)
+            try:
+                self.relate(ref, other)
+            except PlaneError as e:
+                raise PartialWrite(ref, f"created {ref}; relating to {other} failed: {e}") from e
         return self.get_issue(ref)
 
     def update_issue(

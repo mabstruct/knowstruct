@@ -8,7 +8,7 @@ from pathlib import Path
 from ks.config import ConfigError, load_env
 from ks.digest import digest, kind, line
 from ks.http import PlaneError, UrlHttp
-from ks.plane import Plane, Refused, decision
+from ks.plane import PartialWrite, Plane, Refused, decision
 
 
 def _read(path: str) -> str:
@@ -125,7 +125,7 @@ def main(argv: list[str] | None = None, plane: Plane | None = None) -> int:
         if plane is None:
             plane = Plane(UrlHttp(load_env()))
         args.run(plane, args)
-    except (PlaneError, Refused, KeyError, ValueError, ConfigError, OSError) as e:
+    except (PlaneError, PartialWrite, Refused, KeyError, ValueError, ConfigError, OSError) as e:
         message = e.args[0] if isinstance(e, KeyError) and e.args else e
         print(f"error: {message}", file=sys.stderr)
         return 2

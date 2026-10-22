@@ -1,7 +1,7 @@
 import pytest
 from fake_http import FakeHttp
 
-from ks.plane import Comment, Plane, Refused, decision
+from ks.plane import Comment, PartialWrite, Plane, Refused, decision
 
 W = "/workspaces/mabstruct"
 P = W + "/projects/"
@@ -156,3 +156,12 @@ def test_related_skips_free_text_and_extracts_mixed(plane, fake):
         raw_comment("c2", "<p>relates to: KS-1 (see notes)</p>", "2026-10-02T00:00:00Z"),
     ])
     assert plane.related("KS-7") == ["KS-1"]
+
+
+def test_create_issue_failed_relate_names_created_ref(plane, fake):
+    fake.routes[("POST", C)] = (429, {"detail": "throttled"})
+    with pytest.raises(PartialWrite) as e:
+        plane.create_issue("KS", "T", "", "idea", relates=("KS-1",))
+    assert e.value.ref == "KS-7"
+    msg = str(e.value)
+    assert msg.startswith("created KS-7; relating to KS-1 failed: ") and "429" in msg

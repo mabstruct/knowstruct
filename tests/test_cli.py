@@ -164,3 +164,11 @@ def test_usage_error_returns_2(capsys, routes):
 def test_help_returns_0(capsys, routes):
     assert run(routes, ["--help"]) == 0
     assert "digest" in capsys.readouterr().out
+
+
+def test_create_failed_relate_is_error_naming_ref(capsys, routes):
+    routes[("POST", P + "ks/issues/ks-7/comments/")] = (429, {"detail": "throttled"})
+    argv = ["create", "KS", "--label", "task", "--title", "T", "--body", "x", "--relates", "KS-1"]
+    assert run(routes, argv) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("error: created KS-7; relating to KS-1 failed:")
