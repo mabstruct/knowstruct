@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from ks.convert import html_to_md
 from ks.http import Http, PlaneError
 from ks.refs import parse_ref
 
@@ -114,7 +115,7 @@ class Plane:
             state=states.get(raw["state"], raw["state"]),
             labels=tuple(labels.get(i, i) for i in raw.get("labels") or []),
             priority=raw.get("priority") or "",
-            body_md=raw.get("description_html") or "",  # Task 4: html_to_md
+            body_md=html_to_md(raw.get("description_html")),
             parent_ref=self._parent_ref(project, raw.get("parent"), page_refs or {}),
             created_at=raw.get("created_at") or "",
             updated_at=raw.get("updated_at") or "",

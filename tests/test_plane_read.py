@@ -32,7 +32,7 @@ def test_get_issue_resolves_names():
     fake = FakeHttp({**meta_routes(), ("GET", W + "/issues/KS-3/"): raw_issue(3)})
     issue = Plane(fake).get_issue("ks-3")
     assert (issue.ref, issue.state, issue.labels, issue.priority) == ("KS-3", "Review", ("requirement",), "high")
-    assert (issue.id, issue.project, issue.title, issue.body_md) == ("i3", "KS", "issue 3", "<p>x</p>")
+    assert (issue.id, issue.project, issue.title, issue.body_md) == ("i3", "KS", "issue 3", "x")
     assert issue.parent_ref is None
     assert (issue.created_at, issue.updated_at) == ("2026-10-01T10:00:00Z", "2026-10-02T10:00:00Z")
 
