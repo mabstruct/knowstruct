@@ -10,7 +10,7 @@ Plane (workspace `mabstruct`, projects `CLAWSTRUCT`, `CONSTRUCT`, `ZENSTRUCT`, `
 ## The rule
 
 1. Agents never set `Done` or `Cancelled`. Only the user does, in Plane. A run ends in `Review`.
-2. Nothing is written to Plane that the user has not seen in chat first, in full, and approved.
+2. Capture and walk through: nothing is written to Plane until the user has seen it in chat, in full, and said yes. Run: the result (analysis summary, spike result) is posted after the user has seen it in chat, without waiting for a yes; the user's approval happens in `Review`.
 3. The Plane token is never read, printed or quoted. Never open, cat or name the `.env` file.
 4. All Plane access goes through the client, always spelled:
 
@@ -54,7 +54,7 @@ Turn the current conversation into issues: ideas, a requirement draft, an analys
 
 1. Decide what is in the conversation: each `idea`, a `requirement` (only if why, evidence and judged-by are there), an `analysis`. A requirement is never a feature description.
 2. For each, read the matching template in `templates/` (`requirement.md`, `analysis.md`, `task.md`, `proposal.md`, `spike.md`) and fill every heading from the conversation. Where the conversation does not support a heading, write `unknown` and ask the user; do not invent.
-3. Show in chat, for each issue: project, label, title, state (`Backlog` for ideas, `Review` for a finished requirement draft or analysis), parent/relates, and the complete filled body.
+3. Show in chat, for each issue: project, label, title, state (by kind: analysis to be run `Todo`; analysis already written in chat `Review`; requirement draft `Review`; proposal `Review`; spike `Todo`; task `Backlog`; idea `Backlog`), parent/relates, and the complete filled body.
 4. Wait for the user's yes, or edits. Then, per issue, write the body to a temp file and run:
    `uv run --project /Users/mab/dev/mabstruct/knowstruct ks create PROJECT --label LABEL --title "TITLE" --body-file FILE --state STATE`
    adding `--parent REF` and `--relates REF ...` where they apply. Cross-project links are made with `uv run --project /Users/mab/dev/mabstruct/knowstruct ks relate REF OTHER`.
@@ -77,12 +77,12 @@ For an approved `Todo` issue. First `uv run --project /Users/mab/dev/mabstruct/k
 
 ### run: analysis
 
-1. From the ticket body take the approach name (`{approach}`), the folders (`{folders}`) and the token budget (`{cap}`; if none is on the ticket, 400k tokens and say so). `{ticket}` is the ticket body.
+1. From the ticket body take the approach name from its `Approach:` line (`{approach}`), the folders (`{folders}`) and the token budget (`{cap}`; if none is on the ticket, 400k tokens and say so). `{ticket}` is the ticket body.
 2. Read `prompts/analysis-agent.md` and fill its four placeholders `{approach}`, `{folders}`, `{cap}`, `{ticket}`.
-3. Set the state: `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state "In Progress"`.
-4. Dispatch a read-only agent with your Agent tool, model `opus`, the filled prompt as its prompt. Several analyses are dispatched in parallel, one agent per ticket, in one message. The agent writes `docs/analysis/<approach>.md` in `/Users/mab/dev/mabstruct/knowstruct` and returns a summary of at most 300 words with candidate requirements, one line each. The agent never writes to Plane and never reads `.env`.
+3. Set the state (part of running the approved `Todo` ticket the user picked in the confirmation above, no further yes needed): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state "In Progress"`.
+4. Dispatch with your Agent tool: `subagent_type: general-purpose` (not Explore, which cannot write), model `opus`, the filled prompt as its prompt. The agent is read-only on everything except creating that one file `docs/analysis/<approach>.md` (the `docs/analysis/` directory does not exist yet; it creates it). Several analyses are dispatched in parallel, one agent per ticket, in one message. The agent writes `docs/analysis/<approach>.md` in `/Users/mab/dev/mabstruct/knowstruct` and returns a summary of at most 300 words with candidate requirements, one line each. The agent never writes to Plane and never reads `.env`.
 5. Save the summary to a temp file. Show it to the user in chat.
-6. After the user has seen it: `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file SUMMARYFILE`, then `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state Review`.
+6. Once the user has seen it in chat (no yes needed; the user approves in `Review`): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file SUMMARYFILE`, then `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state Review`.
 7. Commit the analysis file in the knowstruct repo: `git -C /Users/mab/dev/mabstruct/knowstruct add docs/analysis/<approach>.md` and a commit with a message naming the ticket. Never `git add -A`.
 8. If the agent ran out of cap, its summary says what was covered and skipped; post that as it is. Candidate requirements become `requirement` drafts only through the capture move.
 
@@ -92,7 +92,7 @@ For an approved `Todo` issue. First `uv run --project /Users/mab/dev/mabstruct/k
 2. Set `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state "In Progress"`.
 3. Work in the scratchpad or a throwaway branch, inside the time box from the ticket, with no plan and no TDD. One agent: model `opus` if the spike is research-shaped, `sonnet` if build-shaped. Its prompt carries the question, the time box, the domain, and the rules (never write to Plane, never read `.env`). Code quality does not matter; the code is deleted afterwards.
 4. At the end of the time box, stop, even if unfinished; what was reached is the result. Write the result using the `## Result` and `## Proposal` headings of the template.
-5. Show the result to the user. Then post it: `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file RESULTFILE`. If it ends in a proposal or an analysis finding, create it per capture (`templates/proposal.md`; a proposal needs at least two options, "do nothing" counts, and the recommendation is marked as the agent's), link it with `ks relate`, and delete the spike code.
+5. Show the result to the user, then post it without waiting for a yes (the user approves in `Review`): `uv run --project /Users/mab/dev/mabstruct/knowstruct ks comment REF --file RESULTFILE`. If it ends in a proposal or an analysis finding, create it per capture (`templates/proposal.md`; a proposal needs at least two options, "do nothing" counts, and the recommendation is marked as the agent's), link it with `ks relate`, and delete the spike code.
 6. `uv run --project /Users/mab/dev/mabstruct/knowstruct ks update REF --state Review`.
 
 ### run: iteration

@@ -1,3 +1,4 @@
+Approach: *(the approach name, e.g. construct)*
 Budget: *(token cap for the reading, e.g. 400k tokens)*
 Folders: *(the folders this analysis may read)*
 
